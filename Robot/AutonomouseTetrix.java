@@ -111,10 +111,10 @@ public class MecanumDrive extends OpMode {
         }
 
         // arm angle code
-        if (gamepad1.dpad_up ){//&& armAngleCurrentPosition + armStep > armAngleMaxPosition) {
+        if (gamepad1.dpad_up && armAngleCurrentPosition + armAngleStep < armAngleMaxPosition) {
             // open servo
-            armAngleMotor.setPower(0.5);
-        } else if (gamepad1.dpad_down ){//&& armAngleCurrentPosition + armStep < armAngleMinPosition) {
+            armAngleMotor.setPower(0.5);//might need to set power to negative depending on if the motor is flipped.
+        } else if (gamepad1.dpad_down && armAngleCurrentPosition + armAngleStep > armAngleMinPosition) {
             // close servo
             armAngleMotor.setPower(-0.5);
         } else {
