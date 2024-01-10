@@ -1,4 +1,3 @@
-
 //**WORK IN PROGRESS!!**//
 
 package org.firstinspires.ftc.teamcode;
@@ -27,8 +26,8 @@ public class MecanumDrive extends OpMode {
     int armAnglePosition = 0;
     int armAnglePrevPos = 0;
     int armPreviousPosition = 0;
-    int armMinPosition = -962;
-    int armMaxPosition = -55; // Safer than Zero
+    int armMinPosition = 0;
+    int armMaxPosition = -1111;//motor telemetry is backwards
     int dangerZoneOffsetUp = 0;
     int dangerZoneOffsetDown = 100;
 
@@ -41,7 +40,7 @@ public class MecanumDrive extends OpMode {
     int armAnglePreviousPosition = 0;
     int angleCurrentPosition = 0;
     int anglePreviousPosition = 0;
-    int armAngleMinPosition = 0;
+    int armAngleMinPosition = 0; //generally all min positions should be 0 but there can be use cases where it isn't.
     int armAngleMaxPosition = 1200; // Safer than Zero
     int AdangerZoneOffsetUp = 0;
     int AdangerZoneOffsetDown = 100;
@@ -71,18 +70,12 @@ public class MecanumDrive extends OpMode {
         rightRear.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         leftRear.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        //armMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
-        // armServo = hardwareMap.servo.get("armservo");
-        // armServo.setPosition(.#);
-        // could be useful??
-
-        // waitForStart();
     }
 
     public void loop() {
         
         int armStep = armCurrentPosition - armPreviousPosition;
+        int armAngleStep = armAngleCurrentPosition - armAnglePreviousPosition;
 
         double y = gamepad1.left_stick_y;
         double x = gamepad1.left_stick_x;
@@ -97,30 +90,44 @@ public class MecanumDrive extends OpMode {
 
         // arm
         // code---------------------------------------------------------------------------------
-       /* armCurrentPosition = armMotor.getCurrentPosition();
-        int armStep = armCurrentPosition - armPreviousPosition; // -step means we are moving in the negative direction
+        armCurrentPosition = armMotor.getCurrentPosition();
+        armAnglecurrentPosition = armAngleMotor.getCurrentPosition();
+        armStep = armCurrentPosition - armPreviousPosition; // -step means we are moving in the negative direction
                                                                 // (which is up)
 
-        /*telemetry.addData("puhsishun", armCurrentPosition);
-        telemetry.addData("right trigger", gamepad1.right_trigger);
-        telemetry.update();*/
+        telemetry.addData("current pos: ", armCurrentPosition);
+        telemetry.addData("sstep: ", armStep);
+        telemetry.addData("step: ", armAngleStep);
+
+        //lift position telemetry
+        telemetry.addData("arm lift check min position: ", armCurrentPosition + armStep < armMinPosition);
+        telemetry.addData("arm lift check max position: ", armCurrentPosition + armStep > armMaxPosition);
+
+        //angle position telemetry
+        telemetry.addData("arm angle check min position: ", armAngleCurrentPosition + armAngleStep > armAngleMinPosition);
+        telemetry.addData("arm angle check max position: ", armAngleCurrentPosition + armAngleStep < armAngleMaxPosition);
+
+        //motor power
+        telemetry.addData("motor power: ", gamepad1.left_stick_x + ", " + gamepad1.left_stick_y);
+        telemetry.update();
 
         // Up on the left stick is negative for some stupid reason
 
-        // Go Down
-        if (gamepad1.right_trigger > 0.01 /* && armCurrentPosition + armStep > armAngleMinPosition */) {
-            armMotor.setPower(-gamepad1.right_trigger);
-        } else if (gamepad1.left_trigger > 0.01 /* && armCurrentPosition + armStep < armAngleMaxPosition */) {
-            armMotor.setPower(gamepad1.left_trigger);
+        //this is for lift I promise
+        // Go Up      comparison signs are flipped because telemetry is reading negative numbers
+        if (gamepad1.right_trigger > 0.01 && armCurrentPosition + armStep > armMaxPosition) {
+                armMotor.setPower(-gamepad1.right_trigger);
+        } else if (gamepad1.left_trigger > 0.01 && armCurrentPosition + armStep < armMinPosition) {//Go Down
+                armMotor.setPower(gamepad1.left_trigger);
         } else {
             armMotor.setPower(0.0);
         }
 
         // arm angle code
-        if (gamepad1.dpad_up && armAngleCurrentPosition + armStep < armAngleMaxPosition) {
+        if (gamepad1.dpad_up && armAngleCurrentPosition + armAngleStep < armAngleMaxPosition) {
             // open servo
-            armAngleMotor.setPower(0.5);
-        } else if (gamepad1.dpad_down /*&& armAngleCurrentPosition + armStep > armAngleMinPosition*/) {
+            armAngleMotor.setPower(0.5);//might need to set power to negative depending on if the motor is flipped.
+        } else if (gamepad1.dpad_down && armAngleCurrentPosition + armAngleStep > armAngleMinPosition) {
             // close servo
             armAngleMotor.setPower(-0.5);
         } else {
@@ -147,42 +154,4 @@ public class MecanumDrive extends OpMode {
         armPreviousPosition = armCurrentPosition; // Capture the current position for future use
 
     }
-
-    // while() {
-    /*
-     * //finds two of the angles needed to find the power and way of strafing
-     * double r = Math.hypot(gamepad1.left_stick_x, gamepad1.left_stick_y);
-     * 
-     * //finds the tangent line of both x and y of left stick
-     * double robotAngle = Math.atan2(gamepad1.left_stick_y, gamepad1.left_stick_x)
-     * - Math.PI / 4;
-     * 
-     * //sets power targets for speed and aggressiveness on angled strafing??
-     * double rightX = gamepad1.right_stick_x;
-     * final double v1 = r * Math.cos(robotAngle) + rightX;
-     * final double v2 = r * Math.sin(robotAngle) - rightX;
-     * final double v3 = r * Math.sin(robotAngle) + rightX;
-     * final double v4 = r * Math.cos(robotAngle) - rightX;
-     */
-
-    // actually sets power using code right above.
-    /*
-     * leftFront.setPower(v1);
-     * rightFront.setPower(v2);
-     * leftRear.setPower(v3);
-     * rightRear.setPower(v4);
-     */
-
-    // sensory code
-    // System.out.println("x-axis: " + gamepad1.left_stick_x);
-    // System.out.println("y-axis: " + gamepad1.left_stick_y);
-
-    // System.out.println("power: " + v1 + ", " + v2 + ", " + v3 + ", " + v4);
-
-     
-
-    /*
-     * more code here
-     */
-
 }
