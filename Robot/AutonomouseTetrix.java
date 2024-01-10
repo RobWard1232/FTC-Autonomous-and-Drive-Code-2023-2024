@@ -76,6 +76,7 @@ public class MecanumDrive extends OpMode {
         
         int armStep = armCurrentPosition - armPreviousPosition;
 
+        //variable names are kind of hard to read when editing the below code, possibly change them in the future.
         double y = gamepad1.left_stick_y;
         double x = gamepad1.left_stick_x;
         double rx = gamepad1.right_stick_x;
