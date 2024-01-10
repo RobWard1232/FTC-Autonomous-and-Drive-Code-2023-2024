@@ -40,7 +40,7 @@ public class MecanumDrive extends OpMode {
     int armAnglePreviousPosition = 0;
     int angleCurrentPosition = 0;
     int anglePreviousPosition = 0;
-    int armAngleMinPosition = 0; //generally all min positions should be 0 but there can be use cases where it isn't.
+    int armAngleMinPosition = 0;
     int armAngleMaxPosition = 1200; // Safer than Zero
     int AdangerZoneOffsetUp = 0;
     int AdangerZoneOffsetDown = 100;
@@ -77,6 +77,7 @@ public class MecanumDrive extends OpMode {
         int armStep = armCurrentPosition - armPreviousPosition;
         int armAngleStep = armAngleCurrentPosition - armAnglePreviousPosition;
 
+        //variable names are kind of hard to read when editing the below code, possibly change them in the future.
         double y = gamepad1.left_stick_y;
         double x = gamepad1.left_stick_x;
         double rx = gamepad1.right_stick_x;
@@ -94,6 +95,7 @@ public class MecanumDrive extends OpMode {
         armAnglecurrentPosition = armAngleMotor.getCurrentPosition();
         armStep = armCurrentPosition - armPreviousPosition; // -step means we are moving in the negative direction
                                                                 // (which is up)
+        armAngleStep = armAngleCurrentPosition - armAnglePreviousPosition;
 
         telemetry.addData("current pos: ", armCurrentPosition);
         telemetry.addData("sstep: ", armStep);
@@ -111,9 +113,9 @@ public class MecanumDrive extends OpMode {
         telemetry.addData("motor power: ", gamepad1.left_stick_x + ", " + gamepad1.left_stick_y);
         telemetry.update();
 
+
         // Up on the left stick is negative for some stupid reason
 
-        //this is for lift I promise
         // Go Up      comparison signs are flipped because telemetry is reading negative numbers
         if (gamepad1.right_trigger > 0.01 && armCurrentPosition + armStep > armMaxPosition) {
                 armMotor.setPower(-gamepad1.right_trigger);
