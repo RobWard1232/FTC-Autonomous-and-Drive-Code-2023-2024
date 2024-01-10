@@ -1,145 +1,144 @@
+//**WORK IN PROGRESS!!**//
+
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.util.ElapsedTime;
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import java.lang.Math;
 
-/* maybe add method like movement(1.0, 1.0, 1.0, 1.0); 
-* where each double accounts for one motor, 
-* I think that could clean up and shorten the program a lot
-*/
+@TeleOp // should possibly be @autonomous according to youtube
+public class MecanumDrive extends OpMode {
 
-@Autonomous(name = "AutonomouseTetrix")
-public class AutonomouseTetrix extends LinearOpMode {
+    //Servo servo_claw_arm = null;
+    DcMotor leftFront = null;
+    DcMotor rightFront = null;
+    DcMotor leftRear = null;
+    DcMotor rightRear = null;
+    DcMotor sweep = null;
+    DcMotor armAngleMotor = null;
+    //DcMotor lift = null;
+    DcMotor armMotor = null;
 
-    private DcMotor frontLeft;
-    private DcMotor frontRight;
-    private DcMotor backLeft;
-    private DcMotor backRight;
-    private DcMotor sweep;
-    private DcMotor armAngleMotor;
-    
-    // add declaration for arm motors here later
+    int armCurrentPosition = 0;
+    int armAnglePosition = 0;
+    int armAnglePrevPos = 0;
+    int armPreviousPosition = 0;
+    int armMinPosition = 0;
+    int armMaxPosition = -1111;//motor telemetry is backwards
+    int dangerZoneOffsetUp = 0;
+    int dangerZoneOffsetDown = 100;
 
-    @Override
-    public void runOpMode() {
-        frontLeft = hardwareMap.get(DcMotor.class, "zeroth");
-        frontRight = hardwareMap.get(DcMotor.class, "first");
-        backLeft = hardwareMap.get(DcMotor.class, "second");
-        backRight = hardwareMap.get(DcMotor.class, "third");
+    int liftCurrentPos;
+    int liftPrevPos;
+    int liftMinPos;
+    int liftMaxPos;
+
+    int armAngleCurrentPosition = 0;
+    int armAnglePreviousPosition = 0;
+    int angleCurrentPosition = 0;
+    int anglePreviousPosition = 0;
+    int armAngleMinPosition = 0;
+    int armAngleMaxPosition = 1200; // Safer than Zero
+    int AdangerZoneOffsetUp = 0;
+    int AdangerZoneOffsetDown = 100;
+
+    double drivePower = 1.0;
+
+    public void init() {
+
+        //servo_claw_arm = hardwareMap.servo.get("servo_claw_arm");
+        leftFront = hardwareMap.get(DcMotor.class, "zeroth");
+        rightFront = hardwareMap.get(DcMotor.class, "first");
+        leftRear = hardwareMap.get(DcMotor.class, "third");
+        rightRear = hardwareMap.get(DcMotor.class, "second");
+        armMotor = hardwareMap.get(DcMotor.class, "moto_moto");
+        armAngleMotor = hardwareMap.get(DcMotor.class, "ford");
+        sweep = hardwareMap.get(DcMotor.class, "fifd");
+        //servo_claw_arm = hardwareMap.get(Servo.class, "Servo");
         
+
+        armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        armMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        rightRear.setDirection(DcMotor.Direction.REVERSE);
+        rightFront.setDirection(DcMotor.Direction.REVERSE);
+
+        rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightRear.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        leftRear.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+    }
+
+    public void loop() {
         
-        // add arm motor hardwareMap here later
+        int armStep = armCurrentPosition - armPreviousPosition;
 
-        waitForStart();
-        if (opModeIsActive()) {
-            //telemetry.update();
+        double y = gamepad1.left_stick_y;
+        double x = gamepad1.left_stick_x;
+        double rx = gamepad1.right_stick_x;
 
-            // place to write your movement underneath
-            //buffer(15);
-            forward(1.7);
-            buffer(0.3);
-            //change turn to false if you need the robot to go right instead.
-            turn(false);
-            buffer(0.3);
-            forward(6);
-            
-            //for if you are closer to the board
-            //strafe(true, 1.5);
-        }
-    }
+        //might need to change +- later :)
+        leftFront.setPower(y + x + rx);
+        leftRear.setPower((y - x + rx));
+        rightFront.setPower(y - x - rx);
+        //sometimes you need to add * -1.0 to the end of it idk why.
+        rightRear.setPower((y + x - rx)); //lol.
 
-    public void move (double FR, double FL, double BL, double BR) {
-        frontLeft.setPower(-FR * 0.5);
-        frontRight.setPower(FL * 0.5);
-        backLeft.setPower(BL * 0.5);
-        backRight.setPower(-BR * 0.5);
-    }
-                       //negative positive   positive.  negative
-    public void debug (double FR, double FL, double BL, double BR, double time) {
-        
-        ElapsedTime timer = new ElapsedTime();
-        
-        while (timer.seconds() <= time) {
-            frontLeft.setPower(FR);
-            frontRight.setPower(FL);
-            backLeft.setPower(BL);
-            backRight.setPower(BR);
-        }
-    }
+        // arm
+        // code---------------------------------------------------------------------------------
+        armCurrentPosition = armMotor.getCurrentPosition();
+        armStep = armCurrentPosition - armPreviousPosition; // -step means we are moving in the negative direction
+                                                                // (which is up)
 
-    public void forward(double time) {
-        ElapsedTime timer = new ElapsedTime();
+        telemetry.addData("current pos", armCurrentPosition);
+        telemetry.addData("sstep", armStep);
+        telemetry.addData("bool1", armCurrentPosition + armStep > armMaxPosition);
+        telemetry.addData("bool2", armCurrentPosition + armStep < armMinPosition);
+        telemetry.update();
 
-        waitForStart();
-        //telemetry.addData("moving forward.");
-        while (timer.seconds() <= time) {
-            move(1.0, 1.0, 1.0, 1.0);
-        }
-        move(0.0, 0.0, 0.0, 0.0);
-    }
+        // Up on the left stick is negative for some stupid reason
 
-    // backward function :)
-    public void backward(double time) {
-        ElapsedTime timer = new ElapsedTime();
-
-        waitForStart();
-
-        //telemetry.addData("moving backward.");
-        while (timer.seconds() <= time) {
-            move(-1.0, -1.0, -1.0, -1.0);
-        }
-        move(0.0, 0.0, 0.0, 0.0);
-    }
-
-    public void turn(boolean isLeft /* true = left, false = right */) {
-        ElapsedTime timer = new ElapsedTime();
-
-        waitForStart();
-
-        if (isLeft) {
-            //telemetry.addData("moving left.");
-            while (timer.seconds() <= 1.6) {
-                move(1, -1, -1, 1);
-            }
+        // Go Up      comparison signs are flipped because telemetry is reading negative numbers
+        if (gamepad1.right_trigger > 0.01 && armCurrentPosition + armStep > armMaxPosition) {
+                armMotor.setPower(-gamepad1.right_trigger);
+        } else if (gamepad1.left_trigger > 0.01 && armCurrentPosition + armStep < armMinPosition) {//Go Down
+                armMotor.setPower(gamepad1.left_trigger);
         } else {
-            /*
-             * this time can be different depending on what motors
-             * you're using or how much power is set to the motor
-             */
-            //telemetry.addData("moving right.");
-            while (timer.seconds() <= 1.6) {
-                move(-1, 1, 1, -1);
-            }
+            armMotor.setPower(0.0);
         }
-        move(0.0, 0.0, 0.0, 0.0);
-    }
 
-    public void strafe(boolean strafeLeft /* true = left, false = right */, double time) {
-        ElapsedTime timer = new ElapsedTime();
-
-        waitForStart();
-
-        if (strafeLeft) {
-            while (timer.seconds() <= time) {
-                move(-1.0, 1.0, 1.0, -1.0);
-            }
+        // arm angle code
+        if (gamepad1.dpad_up ){//&& armAngleCurrentPosition + armStep > armAngleMaxPosition) {
+            // open servo
+            armAngleMotor.setPower(0.5);
+        } else if (gamepad1.dpad_down ){//&& armAngleCurrentPosition + armStep < armAngleMinPosition) {
+            // close servo
+            armAngleMotor.setPower(-0.5);
         } else {
-            move(1.0, -1.0, -1.0, 1.0);
+            armAngleMotor.setPower(0.0);
         }
-        move(0.0, 0.0, 0.0, 0.0);
-    }
 
-    // method if you want the robot to wait in between actions
-    public void buffer(double time) {
-        ElapsedTime timer = new ElapsedTime();
+        // lift
+        /*if (gamepad1.y && armCurrentPosition < armMaxPosition) {// up
+            lift.setPower(1.0);
+        } else if (gamepad1.a && armCurrentPosition > armMinPosition) {
+            lift.setPower(-1.0);
+        }*///for later use.
 
-        waitForStart();
-        //telemetry.addData("WAIT");
-        while (timer.seconds() <= time) {
-            move(0.0, 0.0, 0.0, 0.0);
+        // sweep code
+        if (gamepad1.right_bumper) {// up
+            sweep.setPower(1.0); // do not change power or else it will explode
+        } else if (gamepad1.left_bumper) {// down
+            sweep.setPower(-1.0);
+        } else {
+            sweep.setPower(0.0);
         }
+
+        armAnglePreviousPosition = armAngleCurrentPosition; // Capture the current position for future use
+        armPreviousPosition = armCurrentPosition; // Capture the current position for future use
+
     }
 }
