@@ -75,6 +75,7 @@ public class MecanumDrive extends OpMode {
     public void loop() {
         
         int armStep = armCurrentPosition - armPreviousPosition;
+        int armAngleStep = armAngleCurrentPosition - armAnglePreviousPosition;
 
         //variable names are kind of hard to read when editing the below code, possibly change them in the future.
         double y = gamepad1.left_stick_y;
@@ -91,14 +92,27 @@ public class MecanumDrive extends OpMode {
         // arm
         // code---------------------------------------------------------------------------------
         armCurrentPosition = armMotor.getCurrentPosition();
+        armAnglecurrentPosition = armAngleMotor.getCurrentPosition();
         armStep = armCurrentPosition - armPreviousPosition; // -step means we are moving in the negative direction
                                                                 // (which is up)
+        armAngleStep = armAngleCurrentPosition - armAnglePreviousPosition;
 
-        telemetry.addData("current pos", armCurrentPosition);
-        telemetry.addData("sstep", armStep);
-        telemetry.addData("bool1", armCurrentPosition + armStep > armMaxPosition);
-        telemetry.addData("bool2", armCurrentPosition + armStep < armMinPosition);
+        telemetry.addData("current pos: ", armCurrentPosition);
+        telemetry.addData("sstep: ", armStep);
+        telemetry.addData("step: ", armAngleStep);
+
+        //lift position telemetry
+        telemetry.addData("arm lift check min position: ", armCurrentPosition + armStep < armMinPosition);
+        telemetry.addData("arm lift check max position: ", armCurrentPosition + armStep > armMaxPosition);
+
+        //angle position telemetry
+        telemetry.addData("arm angle check min position: ", armAngleCurrentPosition + armAngleStep > armAngleMinPosition);
+        telemetry.addData("arm angle check max position: ", armAngleCurrentPosition + armAngleStep < armAngleMaxPosition);
+
+        //motor power
+        telemetry.addData("motor power: ", gamepad1.left_stick_x + ", " + gamepad1.left_stick_y);
         telemetry.update();
+
 
         // Up on the left stick is negative for some stupid reason
 
