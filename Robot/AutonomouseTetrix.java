@@ -1,3 +1,7 @@
+//creator: super duper awesome ultimate fantastic number 1 Robert Ward IV
+//Date: 06/11/23 (day/month/year) -the way dates should be written.
+//purpose: drive code with comments to hopefully help the succesors
+
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
