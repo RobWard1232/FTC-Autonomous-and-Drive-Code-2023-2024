@@ -1,6 +1,8 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -48,11 +50,11 @@ public class AutonomouseTetrix extends LinearOpMode {
     private int angleCurrentPosition = 0;
     private int anglePreviousPosition = 0;
     private int armAngleMinPosition = 0;
-    private int armAngleMaxPosition = 1200; // Safer than Zero
+    private int armAngleMaxPosition = 1000; // Safer than Zero
     private int AdangerZoneOffsetUp = 0;
     private int AdangerZoneOffsetDown = 100;
 
-    private int xPos;
+    private double xPos;
 
     // add declaration for arm motors here later
 
@@ -84,7 +86,7 @@ public class AutonomouseTetrix extends LinearOpMode {
         armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         armMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        boolean isShort = true;
+        boolean status = true;
         // add arm motor hardwareMap here later
         initDoubleVision();
         waitForStart();
@@ -98,7 +100,7 @@ public class AutonomouseTetrix extends LinearOpMode {
                 telemetry.update();
             }
 
-            if (isShort) {
+            if (status) {
                 if (getMetaString.indexOf("Blue") != -1) { // change to specified areas later
                     backward(1.2);
                     buffer(0.3);
@@ -111,8 +113,10 @@ public class AutonomouseTetrix extends LinearOpMode {
                     } else if (something == 3) {
                         strafe(false, 0.3);
                     }
+                    buffer(0.4);
+                    centerRobot(); // might need to take out
                     buffer(0.3);
-                    setArmAnglePosition(true);
+                    setArmAngle(true);
                 } else if (getMetaString.indexOf("Red") != -1) {
                     backward(1.2);
                     buffer(0.3);
@@ -125,8 +129,10 @@ public class AutonomouseTetrix extends LinearOpMode {
                     } else if (something == 6) {
                         strafe(false, 0.3);
                     }
+                    buffer(0.4);
+                    centerRobot();
                     buffer(0.3);
-                    setArmAnglePosition(true);
+                    setArmAngle(true);
                 }
             } else {
                 if (getMetaString.indexOf("Blue") != -1) {
@@ -141,8 +147,10 @@ public class AutonomouseTetrix extends LinearOpMode {
                     } else if (something == 3) {
                         strafe(false, 0.3);
                     }
+                    buffer(0.4);
+                    centerRobot();
                     buffer(0.3);
-                    setArmAnglePosition(true);
+                    setArmAngle(true);
                 } else if (getMetaString.indexOf("Red") != -1) {
                     backward(1.2);
                     buffer(0.3);
@@ -155,8 +163,10 @@ public class AutonomouseTetrix extends LinearOpMode {
                     } else if (something == 3) {
                         strafe(false, 0.3);
                     }
+                    buffer(0.4);
+                    centerRobot();
                     buffer(0.3);
-                    setArmAnglePosition(true);
+                    setArmAngle(true);
                 }
             }
         }
@@ -197,7 +207,7 @@ public class AutonomouseTetrix extends LinearOpMode {
                 telemetry.addLine(String.format("\n==== (ID %d) %s", detection.id, detection.metadata.name));
                 telemetry.addLine(String.format("XYZ %6.1f %6.1f %6.1f  (inch)", detection.ftcPose.x,
                         detection.ftcPose.y, detection.ftcPose.z));
-                xPos = detection.ftcPos.x;
+                xPos = detection.ftcPose.x;
                 something = detection.id;
                 getMetaString = (String) (detection.metadata.name);
             } else {
@@ -275,6 +285,7 @@ public class AutonomouseTetrix extends LinearOpMode {
         move(0.0, 0.0, 0.0, 0.0);
     }
 
+    // FR FL BL BR
     // currently not working correctly
     public void strafe(boolean strafeLeft /* true = left, false = right */, double time) {
         ElapsedTime timer = new ElapsedTime();
@@ -283,11 +294,11 @@ public class AutonomouseTetrix extends LinearOpMode {
 
         if (strafeLeft) {
             while (timer.seconds() <= time) {
-                move(1.0, 1.0, -1.0, -1.0);
+                move(-1.0, 1.0, -1.0, 1.0);
             }
         } else {
             while (timer.seconds() <= time) {
-                move(-1.0, -1.0, 1.0, 1.0);
+                move(1.0, -1.0, 1.0, -1.0);
             }
         }
         move(0.0, 0.0, 0.0, 0.0);
@@ -296,11 +307,11 @@ public class AutonomouseTetrix extends LinearOpMode {
     public void strafe1(boolean strafeLeft) {
         if (strafeLeft) {
             while (strafeLeft) {
-                move(1.0, 1.0, -1.0, -1.0);
+                move(-1.0, 1.0, -1.0, 1.0);
             }
         } else {
             while (!strafeLeft) {
-                move(-1.0, -1.0, 1.0, 1.0);
+                move(1.0, -1.0, 1.0, -1.0);
             }
         }
         move(0.0, 0.0, 0.0, 0.0);
@@ -317,7 +328,7 @@ public class AutonomouseTetrix extends LinearOpMode {
         }
     }
 
-    public void setArmAnglePosition(boolean isMax /* true = max, false = min */) {
+    public void setArmAngle(boolean isMax /* true = max, false = min */) {
 
         int armStep = armAngleCurrentPosition - armPreviousPosition;
 
@@ -347,7 +358,7 @@ public class AutonomouseTetrix extends LinearOpMode {
 
         armCurrentPosition = armMotor.getCurrentPosition();
 
-        telemetry.addLine("arm motor curren pos: " + armCurrenPosition);
+        // telemetry.addLine("arm motor current pos: " + armCurrenPosition);
 
         if (isMax) {
             while (armMotor.getCurrentPosition() + armStep > armMaxPosition) {
@@ -363,17 +374,20 @@ public class AutonomouseTetrix extends LinearOpMode {
         armPreviousPosition = armCurrentPosition;
     }
 
-    // possible integration of centering a qr code **has not been tested yet**
+    // possible integration of centering a qr code
     public void centerRobot() {
-
-        if (xPos > 300) {
-            while (xPos > 300) {
-                strafe(true);
-            }
-        } else if (xPos < 300) {
-            while (xPos < 300) {
-                strafe(false);
-                // might need an if statement to break it?
+        if (getMetaString.indexOf("Blue") != -1 || getMetaString.indexOf("Red") != -1) {
+            while (Math.abs(xPos + 1.2) > 1.0) {
+                if (xPos > -1.2) {
+                    strafe(true, 0.1);
+                    telemetry.addData("going left", 0);
+                } else {
+                    strafe(false, 0.1);
+                    telemetry.addData("going right", 0);
+                    // might need an if statement to break it?
+                }
+                telemetry.update();
+                buffer(0.5);
             }
         }
     }
