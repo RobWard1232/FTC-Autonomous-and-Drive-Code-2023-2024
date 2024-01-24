@@ -377,18 +377,24 @@ public class AutonomouseTetrix extends LinearOpMode {
     // possible integration of centering a qr code
     public void centerRobot() {
         if (getMetaString.indexOf("Blue") != -1 || getMetaString.indexOf("Red") != -1) {
-            while (Math.abs(xPos + 1.2) > 1.0) {
-                if (xPos > -1.2) {
+            double targetXPos = 0.0;
+            double tolerance = 0.3;
+    
+            while (Math.abs(xPos - targetXPos) > tolerance) {
+                if (xPos > targetXPos) {
                     strafe(true, 0.1);
                     telemetry.addData("going left", 0);
                 } else {
                     strafe(false, 0.1);
                     telemetry.addData("going right", 0);
-                    // might need an if statement to break it?
                 }
+                telemetry.addData("Current X Pos", xPos);
                 telemetry.update();
-                buffer(0.5);
+                buffer(0.3);
             }
+            // Stop moving once centered
+            move(0.0, 0.0, 0.0, 0.0);
         }
     }
+
 }
