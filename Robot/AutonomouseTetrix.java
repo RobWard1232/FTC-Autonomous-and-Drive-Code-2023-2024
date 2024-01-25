@@ -15,12 +15,9 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import org.firstinspires.ftc.vision.tfod.TfodProcessor;
 
-import java.util.List;
+//IMPORTANT figure out how to clear the apriltag list to find a new qr code while centering
 
-/* maybe add method like movement(1.0, 1.0, 1.0, 1.0); 
-* where each double accounts for one motor, 
-* I think that could clean up and shorten the program a lot
-*/
+import java.util.List;
 
 @Autonomous(name = "AutonomouseTetrix")
 public class AutonomouseTetrix extends LinearOpMode {
@@ -50,7 +47,7 @@ public class AutonomouseTetrix extends LinearOpMode {
     private int angleCurrentPosition = 0;
     private int anglePreviousPosition = 0;
     private int armAngleMinPosition = 0;
-    private int armAngleMaxPosition = 1000; // Safer than Zero
+    private int armAngleMaxPosition = 2000; // Safer than Zero
     private int AdangerZoneOffsetUp = 0;
     private int AdangerZoneOffsetDown = 100;
 
@@ -82,6 +79,12 @@ public class AutonomouseTetrix extends LinearOpMode {
         backRight = hardwareMap.get(DcMotor.class, "third");
         armAngleMotor = hardwareMap.get(DcMotor.class, "ford");
         armMotor = hardwareMap.get(DcMotor.class, "moto_moto");
+        // voltageSensor voltSensor = hardwareMap.voltageSensor.get("Motor Controller
+        // 1");
+        /*
+         * voltageSensor would be for later use in order to set the power correctly
+         * and more consistantly
+         */
 
         armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         armMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -210,6 +213,7 @@ public class AutonomouseTetrix extends LinearOpMode {
                 xPos = detection.ftcPose.x;
                 something = detection.id;
                 getMetaString = (String) (detection.metadata.name);
+                currentDetections.clear();
             } else {
                 telemetry.addLine(String.format("\n==== (ID %d) Unknown", detection.id));
                 telemetry.addLine(
@@ -269,7 +273,7 @@ public class AutonomouseTetrix extends LinearOpMode {
 
         if (isLeft) {
             // telemetry.addData("moving left.");
-            while (timer.seconds() <= 1.6) {
+            while (timer.seconds() <= 1.5) {
                 move(1, -1, -1, 1);
             }
         } else {
@@ -278,7 +282,7 @@ public class AutonomouseTetrix extends LinearOpMode {
              * you're using or how much power is set to the motor
              */
             // telemetry.addData("moving right.");
-            while (timer.seconds() <= 1.6) {
+            while (timer.seconds() <= 1.5) {
                 move(-1, 1, 1, -1);
             }
         }
@@ -337,7 +341,7 @@ public class AutonomouseTetrix extends LinearOpMode {
         telemetry.addLine("arm angle motor current pos: " + armAngleCurrentPosition);
 
         if (isMax) {
-            while (armAngleMotor.getCurrentPosition() + armStep > -500 /*
+            while (armAngleMotor.getCurrentPosition() + armStep > -830 /*
                                                                         * <- this number might need to change depending
                                                                         * on the batterys charge?
                                                                         */) {
@@ -377,24 +381,74 @@ public class AutonomouseTetrix extends LinearOpMode {
     // possible integration of centering a qr code
     public void centerRobot() {
         if (getMetaString.indexOf("Blue") != -1 || getMetaString.indexOf("Red") != -1) {
-            double targetXPos = 0.0;
-            double tolerance = 0.3;
-    
-            while (Math.abs(xPos - targetXPos) > tolerance) {
-                if (xPos > targetXPos) {
-                    strafe(true, 0.1);
-                    telemetry.addData("going left", 0);
-                } else {
-                    strafe(false, 0.1);
-                    telemetry.addData("going right", 0);
-                }
-                telemetry.addData("Current X Pos", xPos);
+            double targetXPos = 0.1;
+            double tolerance = 0.0;
+
+            while (aprilTag.getDetections().isEmpty()) {
+                telemetry.addData("No new QR code detected. Searching...", xPos); // this should make it so that it
+                                                                                  // checks for a new aprilTag, but
+                                                                                  // we'll see...
                 telemetry.update();
-                buffer(0.3);
+                telemetryAprilTag();
             }
-            // Stop moving once centered
+
+            while (Math.abs(xPos - targetXPos) > tolerance || Math.abs(xPos - targetXPos) < -tolerance) {
+                if (xPos < targetXPos) {
+                    strafe(true, 0.55);
+                    telemetry.addData("going left", xPos);
+                    telemetry.update();
+                    break;
+                } else {
+                    strafe(false, 0.55);
+                    telemetry.addData("going right", xPos);
+                    telemetry.update();
+                    break;
+                }
+            }
             move(0.0, 0.0, 0.0, 0.0);
         }
     }
+
+    // this could also be a possible way to do this:
+    /*
+     * private int originalTagID = -1;
+     * 
+     * public void centerRobot() {
+     * if (getMetaString.indexOf("Blue") != -1 || getMetaString.indexOf("Red") !=
+     * -1) {
+     * double targetXPos = 0.1;
+     * double tolerance = 0.0;
+     * 
+     * // Check for a new QR code before centering
+     * List<AprilTagDetection> currentDetections = aprilTag.getDetections();
+     * while (currentDetections.isEmpty() || (originalTagID != -1 &&
+     * currentDetections.get(0).id == originalTagID)) {
+     * telemetry.addData("No new QR code detected. Searching...", xPos);
+     * telemetry.update();
+     * telemetryAprilTag(); // Update detections
+     * currentDetections = aprilTag.getDetections();
+     * }
+     * 
+     * // Save the ID of the new QR code for future reference
+     * originalTagID = currentDetections.get(0).id;
+     * 
+     * while (Math.abs(xPos - targetXPos) > tolerance || Math.abs(xPos - targetXPos)
+     * < -tolerance) {
+     * if (xPos < targetXPos) {
+     * strafe(true, 0.55);
+     * telemetry.addData("going left", xPos);
+     * telemetry.update();
+     * break;
+     * } else {
+     * strafe(false, 0.55);
+     * telemetry.addData("going right", xPos);
+     * telemetry.update();
+     * break;
+     * }
+     * }
+     * move(0.0, 0.0, 0.0, 0.0);
+     * }
+     * }
+     */
 
 }
