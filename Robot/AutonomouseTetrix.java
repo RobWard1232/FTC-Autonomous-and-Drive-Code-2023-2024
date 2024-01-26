@@ -382,7 +382,7 @@ public class AutonomouseTetrix extends LinearOpMode {
     public void centerRobot() {
         if (getMetaString.indexOf("Blue") != -1 || getMetaString.indexOf("Red") != -1) {
             double targetXPos = 0.1;
-            double tolerance = 0.0;
+            double tolerance = 0.1;
 
             while (aprilTag.getDetections().isEmpty()) {
                 telemetry.addData("No new QR code detected. Searching...", xPos); // this should make it so that it
@@ -394,61 +394,17 @@ public class AutonomouseTetrix extends LinearOpMode {
 
             while (Math.abs(xPos - targetXPos) > tolerance || Math.abs(xPos - targetXPos) < -tolerance) {
                 if (xPos < targetXPos) {
-                    strafe(true, 0.55);
+                    strafe(true, 0.1);
                     telemetry.addData("going left", xPos);
                     telemetry.update();
-                    break;
-                } else {
-                    strafe(false, 0.55);
+                } else if (xPos > targetXPos) {
+                    strafe(false, 0.1);
                     telemetry.addData("going right", xPos);
                     telemetry.update();
-                    break;
+                } else {
+                    break; // idk if this will work
                 }
-            }
             move(0.0, 0.0, 0.0, 0.0);
         }
     }
-
-    // this could also be a possible way to do this:
-    /*
-     * private int originalTagID = -1;
-     * 
-     * public void centerRobot() {
-     * if (getMetaString.indexOf("Blue") != -1 || getMetaString.indexOf("Red") !=
-     * -1) {
-     * double targetXPos = 0.1;
-     * double tolerance = 0.0;
-     * 
-     * // Check for a new QR code before centering
-     * List<AprilTagDetection> currentDetections = aprilTag.getDetections();
-     * while (currentDetections.isEmpty() || (originalTagID != -1 &&
-     * currentDetections.get(0).id == originalTagID)) {
-     * telemetry.addData("No new QR code detected. Searching...", xPos);
-     * telemetry.update();
-     * telemetryAprilTag(); // Update detections
-     * currentDetections = aprilTag.getDetections();
-     * }
-     * 
-     * // Save the ID of the new QR code for future reference
-     * originalTagID = currentDetections.get(0).id;
-     * 
-     * while (Math.abs(xPos - targetXPos) > tolerance || Math.abs(xPos - targetXPos)
-     * < -tolerance) {
-     * if (xPos < targetXPos) {
-     * strafe(true, 0.55);
-     * telemetry.addData("going left", xPos);
-     * telemetry.update();
-     * break;
-     * } else {
-     * strafe(false, 0.55);
-     * telemetry.addData("going right", xPos);
-     * telemetry.update();
-     * break;
-     * }
-     * }
-     * move(0.0, 0.0, 0.0, 0.0);
-     * }
-     * }
-     */
-
 }
