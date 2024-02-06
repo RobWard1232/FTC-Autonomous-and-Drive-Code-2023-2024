@@ -17,10 +17,12 @@ public class MecanumDrive extends OpMode {
     DcMotor rightFront = null;
     DcMotor leftRear = null;
     DcMotor rightRear = null;
-    DcMotor sweep = null;
+    //DcMotor sweep = null;
     DcMotor armAngleMotor = null;
-    //DcMotor lift = null;
     DcMotor armMotor = null;
+    DcMotor wrist = null;
+    Servo someServo = null;
+    Servo someServo1 = null;
 
     int armCurrentPosition = 0;
     int armAnglePosition = 0;
@@ -40,14 +42,23 @@ public class MecanumDrive extends OpMode {
     int armAnglePreviousPosition = 0;
     int angleCurrentPosition = 0;
     int anglePreviousPosition = 0;
-    int armAngleMinPosition = 0; //generally all min positions should be 0 but there can be use cases where it isn't.
+    int armAngleMinPosition = 0;
     int armAngleMaxPosition = 1200; // Safer than Zero
     int AdangerZoneOffsetUp = 0;
     int AdangerZoneOffsetDown = 100;
+    
+    int wristMinPos = -10;
+    int wristMaxPos = 170;
+    int wristCurrentPosition = 0;
+    int wristPreviousPosition = 0;
 
     double drivePower = 1.0;
+    double servoPos = 0.25;
+    double servoPos1 = 0.499999999;
+    
+    boolean previous = false;
 
-    public void init () {
+    public void init() {
 
         //servo_claw_arm = hardwareMap.servo.get("servo_claw_arm");
         leftFront = hardwareMap.get(DcMotor.class, "zeroth");
@@ -56,7 +67,10 @@ public class MecanumDrive extends OpMode {
         rightRear = hardwareMap.get(DcMotor.class, "second");
         armMotor = hardwareMap.get(DcMotor.class, "moto_moto");
         armAngleMotor = hardwareMap.get(DcMotor.class, "ford");
-        sweep = hardwareMap.get(DcMotor.class, "fifd");
+        //sweep = hardwareMap.get(DcMotor.class, "fifd");
+        someServo = hardwareMap.get(Servo.class, "serv0");
+        someServo1 = hardwareMap.get(Servo.class, "serv1");
+        wrist = hardwareMap.get(DcMotor.class, "wrist");
         //servo_claw_arm = hardwareMap.get(Servo.class, "Servo");
         
 
@@ -72,10 +86,10 @@ public class MecanumDrive extends OpMode {
         leftRear.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
     }
 
-    public void loop () {
+    public void loop() {
         
         int armStep = armCurrentPosition - armPreviousPosition;
-        int armAngleStep = armAngleCurrentPosition - armAnglePreviousPosition;
+        int wristStep = wristCurrentPosition - wristPreviousPosition;
 
         double y = gamepad1.left_stick_y;
         double x = gamepad1.left_stick_x;
@@ -91,30 +105,22 @@ public class MecanumDrive extends OpMode {
         // arm
         // code---------------------------------------------------------------------------------
         armCurrentPosition = armMotor.getCurrentPosition();
-        armAnglecurrentPosition = armAngleMotor.getCurrentPosition();
-        armStep = armCurrentPosition - armPreviousPosition; // -step means we are moving in the negative direction
+        wristCurrentPosition = wrist.getCurrentPosition();
+        armStep = armCurrentPosition - armPreviousPosition;// -step means we are moving in the negative direction
                                                                 // (which is up)
-        armAngleStep = armAngleCurrentPosition - armAnglePreviousPosition;
+        wristStep = wristCurrentPosition - armPreviousPosition;    
+        
 
-        telemetry.addData("current pos: ", armCurrentPosition);
-        telemetry.addData("sstep: ", armStep);
-        telemetry.addData("step: ", armAngleStep);
-
-        //lift position telemetry
-        telemetry.addData("arm lift check min position: ", armCurrentPosition + armStep < armMinPosition);
-        telemetry.addData("arm lift check max position: ", armCurrentPosition + armStep > armMaxPosition);
-
-        //angle position telemetry
-        telemetry.addData("arm angle check min position: ", armAngleCurrentPosition + armAngleStep > armAngleMinPosition);
-        telemetry.addData("arm angle check max position: ", armAngleCurrentPosition + armAngleStep < armAngleMaxPosition);
-
-        //motor power
-        telemetry.addData("motor power: ", gamepad1.left_stick_x + ", " + gamepad1.left_stick_y);
+        telemetry.addData("current pos", armCurrentPosition);
+        telemetry.addData("sstep", armStep);
+        telemetry.addData("bool1", armCurrentPosition + armStep > armMaxPosition);
+        telemetry.addData("bool2", armCurrentPosition + armStep < armMinPosition);
+        
+        telemetry.addData("wristPosition: ", wristCurrentPosition + wristStep);
         telemetry.update();
 
         // Up on the left stick is negative for some stupid reason
 
-        //this is for lift I promise
         // Go Up      comparison signs are flipped because telemetry is reading negative numbers
         if (gamepad1.right_trigger > 0.01 && armCurrentPosition + armStep > armMaxPosition) {
                 armMotor.setPower(-gamepad1.right_trigger);
@@ -125,15 +131,40 @@ public class MecanumDrive extends OpMode {
         }
 
         // arm angle code
-        if (gamepad1.dpad_up && armAngleCurrentPosition + armAngleStep < armAngleMaxPosition) {
+        if (gamepad1.dpad_up && armAngleCurrentPosition + armStep < armAngleMaxPosition /*&& servoPos < -0.75*/) {
             // open servo
-            armAngleMotor.setPower(0.5);//might need to set power to negative depending on if the motor is flipped.
-        } else if (gamepad1.dpad_down && armAngleCurrentPosition + armAngleStep > armAngleMinPosition) {
-            // close servo
             armAngleMotor.setPower(-0.5);
+        } else if (gamepad1.dpad_down && armAngleCurrentPosition + armStep > armAngleMinPosition) {
+            // close servo
+            armAngleMotor.setPower(0.5);
         } else {
             armAngleMotor.setPower(0.0);
         }
+        
+        //wrist code
+        
+        if (armAngleCurrentPosition + armStep == armAngleMaxPosition) {
+            if (wristCurrentPosition + wristStep < wristMinPos) {
+                wrist.setPower(0.5);
+            }
+        } else if (armAngleCurrentPosition + armStep == armAngleMinPosition) {
+            if (wristCurrentPosition + wristStep > wristMaxPos) {
+                wrist.setPower(-0.5);
+                
+            }
+        } else {
+            wrist.setPower(0.0);
+        }
+        
+        // servo collection code
+        if (gamepad1.y && previous != gamepad1.y && armAngleCurrentPosition + armStep < armAngleMaxPosition || armAngleCurrentPosition + armStep > armAngleMinPosition) {
+            servoPos *= -1;
+            servoPos1 *= -1;
+            someServo.setPosition(servoPos + 0.75);
+            someServo1.setPosition(-servoPos + 0.75);
+        }
+        
+        previous = gamepad1.y;
 
         // lift
         /*if (gamepad1.y && armCurrentPosition < armMaxPosition) {// up
@@ -143,16 +174,17 @@ public class MecanumDrive extends OpMode {
         }*///for later use.
 
         // sweep code
-        if (gamepad1.right_bumper) {// up
+        /*if (gamepad1.right_bumper) {// up
             sweep.setPower(1.0); // do not change power or else it will explode
         } else if (gamepad1.left_bumper) {// down
             sweep.setPower(-1.0);
         } else {
             sweep.setPower(0.0);
-        }
+        }*/
 
         armAnglePreviousPosition = armAngleCurrentPosition; // Capture the current position for future use
         armPreviousPosition = armCurrentPosition; // Capture the current position for future use
+        wristPreviousPosition = wristCurrentPosition;
 
     }
 }
