@@ -43,12 +43,12 @@ public class MecanumDrive extends OpMode {
     int angleCurrentPosition = 0;
     int anglePreviousPosition = 0;
     int armAngleMinPosition = 0;
-    int armAngleMaxPosition = 1200; // Safer than Zero
+    int armAngleMaxPosition = -1450; // Safer than Zero
     int AdangerZoneOffsetUp = 0;
     int AdangerZoneOffsetDown = 100;
     
-    int wristMinPos = -10;
-    int wristMaxPos = 170;
+    int wristMinPos = -16;
+    int wristMaxPos = 200;
     int wristCurrentPosition = 0;
     int wristPreviousPosition = 0;
 
@@ -76,19 +76,24 @@ public class MecanumDrive extends OpMode {
 
         armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         armMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-
-        rightRear.setDirection(DcMotor.Direction.REVERSE);
-        rightFront.setDirection(DcMotor.Direction.REVERSE);
+        
+        armAngleMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        armAngleMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        
+        wrist.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        wrist.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         rightRear.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         leftRear.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        armAngleMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
     }
 
     public void loop() {
         
         int armStep = armCurrentPosition - armPreviousPosition;
+        int armAngleStep = armAngleCurrentPosition - armAnglePreviousPosition;
         int wristStep = wristCurrentPosition - wristPreviousPosition;
 
         double y = gamepad1.left_stick_y;
@@ -106,6 +111,7 @@ public class MecanumDrive extends OpMode {
         // code---------------------------------------------------------------------------------
         armCurrentPosition = armMotor.getCurrentPosition();
         wristCurrentPosition = wrist.getCurrentPosition();
+        armAngleCurrentPosition = armAngleMotor.getCurrentPosition();
         armStep = armCurrentPosition - armPreviousPosition;// -step means we are moving in the negative direction
                                                                 // (which is up)
         wristStep = wristCurrentPosition - armPreviousPosition;    
@@ -115,6 +121,8 @@ public class MecanumDrive extends OpMode {
         telemetry.addData("sstep", armStep);
         telemetry.addData("bool1", armCurrentPosition + armStep > armMaxPosition);
         telemetry.addData("bool2", armCurrentPosition + armStep < armMinPosition);
+        
+        telemetry.addData("armAngle position: ", armAngleCurrentPosition);
         
         telemetry.addData("wristPosition: ", wristCurrentPosition + wristStep);
         telemetry.update();
@@ -131,10 +139,10 @@ public class MecanumDrive extends OpMode {
         }
 
         // arm angle code
-        if (gamepad1.dpad_up && armAngleCurrentPosition + armStep < armAngleMaxPosition /*&& servoPos < -0.75*/) {
+        if (gamepad1.dpad_up && armAngleCurrentPosition + armStep > armAngleMaxPosition /*&& servoPos < -0.75*/) {
             // open servo
             armAngleMotor.setPower(-0.5);
-        } else if (gamepad1.dpad_down && armAngleCurrentPosition + armStep > armAngleMinPosition) {
+        } else if (gamepad1.dpad_down && armAngleCurrentPosition + armStep < armAngleMinPosition) {
             // close servo
             armAngleMotor.setPower(0.5);
         } else {
@@ -142,22 +150,20 @@ public class MecanumDrive extends OpMode {
         }
         
         //wrist code
-        
-        if (armAngleCurrentPosition + armStep == armAngleMaxPosition) {
+        if (armAngleCurrentPosition + armStep <= armAngleMaxPosition + 50 || armAngleCurrentPosition + armStep <= armAngleMaxPosition - 50) {
             if (wristCurrentPosition + wristStep < wristMinPos) {
-                wrist.setPower(0.5);
+                wrist.setPower(0.3);
             }
-        } else if (armAngleCurrentPosition + armStep == armAngleMinPosition) {
+        } else if (armAngleCurrentPosition + armStep >= armAngleMinPosition) {
             if (wristCurrentPosition + wristStep > wristMaxPos) {
-                wrist.setPower(-0.5);
-                
+                wrist.setPower(-0.3);
             }
         } else {
             wrist.setPower(0.0);
         }
         
         // servo collection code
-        if (gamepad1.y && previous != gamepad1.y && armAngleCurrentPosition + armStep < armAngleMaxPosition || armAngleCurrentPosition + armStep > armAngleMinPosition) {
+        if (gamepad1.y && previous != gamepad1.y /*&& armAngleCurrentPosition + armStep < armAngleMaxPosition || armAngleCurrentPosition + armStep > armAngleMinPosition*/) {
             servoPos *= -1;
             servoPos1 *= -1;
             someServo.setPosition(servoPos + 0.75);
