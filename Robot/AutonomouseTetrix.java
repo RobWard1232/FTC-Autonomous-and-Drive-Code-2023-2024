@@ -30,8 +30,9 @@ public class AutonomouseTetrix extends LinearOpMode {
     private DcMotor armMotor;
     private DcMotor armAngleMotor;
 
-    private int something = 0;
-    private String getMetaString;
+    //use this if april tag is ever legal again for game pieces.
+    //private int something = 0;
+    //private String getMetaString;
 
     private int armCurrentPosition = 0;
     private int armAnglePosition = 0;
@@ -58,18 +59,18 @@ public class AutonomouseTetrix extends LinearOpMode {
     /**
      * The variable to store our instance of the AprilTag processor.
      */
-    private AprilTagProcessor aprilTag;
+    //private AprilTagProcessor aprilTag;
 
     /**
      * The variable to store our instance of the TensorFlow Object Detection
      * processor.
      */
-    private TfodProcessor tfod;
+    //private TfodProcessor tfod;
 
     /**
      * The variable to store our instance of the vision portal.
      */
-    private VisionPortal myVisionPortal;
+    //private VisionPortal myVisionPortal;
 
     @Override
     public void runOpMode() {
