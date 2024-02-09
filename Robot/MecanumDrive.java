@@ -151,12 +151,13 @@ public class MecanumDrive extends OpMode {
         }
 
         // wrist code
-        if (armAngleCurrentPosition + armStep <= armAngleMaxPosition + 50
-                || armAngleCurrentPosition + armStep <= armAngleMaxPosition - 50) {
+        if (armAngleCurrentPosition + armStep <= armAngleMaxPosition + 75
+                || armAngleCurrentPosition + armStep <= armAngleMaxPosition - 75) {
             if (wristCurrentPosition + wristStep < wristMinPos) {
                 wrist.setPower(0.3);
-            }
-        } else if (armAngleCurrentPosition + armStep >= armAngleMinPosition) {
+            }//this logic creates a deadzone to help the wrist, although I may need to change some symbols.
+        } else if (armAngleCurrentPosition + armStep >= armAngleMinPosition + 75 
+                    || armAngleCurrentPosition + armStep <= armAngleMinPosition - 75) {
             if (wristCurrentPosition + wristStep > wristMaxPos) {
                 wrist.setPower(-0.3);
             }
