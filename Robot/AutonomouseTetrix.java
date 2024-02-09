@@ -29,6 +29,7 @@ public class AutonomouseTetrix extends LinearOpMode {
     private DcMotor sweep;
     private DcMotor armMotor;
     private DcMotor armAngleMotor;
+    private DcMotor wrist;
 
     //use this if april tag is ever legal again for game pieces.
     //private int something = 0;
@@ -51,6 +52,11 @@ public class AutonomouseTetrix extends LinearOpMode {
     private int armAngleMaxPosition = 2000; // Safer than Zero
     private int AdangerZoneOffsetUp = 0;
     private int AdangerZoneOffsetDown = 100;
+
+    private int wristCurrentPosition = 0;
+    private int wristPreviousPosition = 0;
+    private int wristMin = 0;
+    private int wristMax = 150;
 
     private double xPos;
 
@@ -80,6 +86,7 @@ public class AutonomouseTetrix extends LinearOpMode {
         backRight = hardwareMap.get(DcMotor.class, "third");
         armAngleMotor = hardwareMap.get(DcMotor.class, "ford");
         armMotor = hardwareMap.get(DcMotor.class, "moto_moto");
+        wrist = hardwareMap.get(DcMotor.class, "wrist");
         // voltageSensor voltSensor = hardwareMap.voltageSensor.get("Motor Controller
         // 1");
         /*
@@ -89,6 +96,9 @@ public class AutonomouseTetrix extends LinearOpMode {
 
         armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         armMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        wrist.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        wrist.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         boolean status = true;
         // add arm motor hardwareMap here later
@@ -333,9 +343,31 @@ public class AutonomouseTetrix extends LinearOpMode {
         }
     }
 
+    public void setWristPos (bool isMax) {
+        int wristStep = wristCurrentPosition - wristPreviousPosition;
+        wristCurrentPosition = wrist.getCurrentPosition();
+        
+        switch (n) {
+            case true:
+                while (wristCurrentPosition + wristStep < wristMax) {
+                    wrist.setPower(0.3);
+                }
+                break;
+            case false:
+                while (wristCurrentPosition + wristStep > wristMin) {
+                    wrist.setPower(-0.3);
+                }
+                break;
+        }
+
+        wristPreviousPosition = wristCurrentPosition;
+            
+    }
+
+
     public void setArmAngle(boolean isMax /* true = max, false = min */) {
 
-        int armStep = armAngleCurrentPosition - armPreviousPosition;
+        int armStep = armAngleCurrentPosition - anglePreviousPosition;
 
         armAngleCurrentPosition = armAngleMotor.getCurrentPosition();
 
@@ -355,7 +387,7 @@ public class AutonomouseTetrix extends LinearOpMode {
             }
             armAngleMotor.setPower(0.0);
         }
-        armAnglePreviousPosition = armAngleCurrentPosition;
+        anglePreviousPosition = armAngleCurrentPosition;
     }
 
     public void setArmPosition(boolean isMax /* true = max, false = min */) {
