@@ -1,6 +1,8 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.Servo;
+import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -11,9 +13,8 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDir
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.vision.VisionPortal;
-import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
-import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import org.firstinspires.ftc.vision.tfod.TfodProcessor;
+//import org.openftc.easyopencv.OpenCvCameraFactory;
 
 //IMPORTANT figure out how to clear the apriltag list to find a new qr code while centering
 
@@ -30,10 +31,11 @@ public class AutonomouseTetrix extends LinearOpMode {
     private DcMotor armMotor;
     private DcMotor armAngleMotor;
     private DcMotor wrist;
+    private Servo servo;
+    private Servo servo1;
 
-    //use this if april tag is ever legal again for game pieces.
-    //private int something = 0;
-    //private String getMetaString;
+    private int something = 0;
+    private String getMetaString;
 
     private int armCurrentPosition = 0;
     private int armAnglePosition = 0;
@@ -52,20 +54,16 @@ public class AutonomouseTetrix extends LinearOpMode {
     private int armAngleMaxPosition = 2000; // Safer than Zero
     private int AdangerZoneOffsetUp = 0;
     private int AdangerZoneOffsetDown = 100;
-
-    private int wristCurrentPosition = 0;
+    
     private int wristPreviousPosition = 0;
-    private int wristMin = 0;
-    private int wristMax = 150;
-
+    private int wristCurrentPosition = 0;
+    private int wristMinPosition = 50;
+    private int wristMaxPosition = 100;
+    
+    private double servoPos0 = 0.25;
+    private double servoPos1 = 0.499999999;
+    
     private double xPos;
-
-    // add declaration for arm motors here later
-
-    /**
-     * The variable to store our instance of the AprilTag processor.
-     */
-    //private AprilTagProcessor aprilTag;
 
     /**
      * The variable to store our instance of the TensorFlow Object Detection
@@ -76,17 +74,21 @@ public class AutonomouseTetrix extends LinearOpMode {
     /**
      * The variable to store our instance of the vision portal.
      */
-    //private VisionPortal myVisionPortal;
+    private VisionPortal visionPortal;
+    
+    //private static final boolean USE_WEBCAM = true;
 
     @Override
     public void runOpMode() {
-        frontLeft = hardwareMap.get(DcMotor.class, "zeroth");
-        frontRight = hardwareMap.get(DcMotor.class, "first");
-        backLeft = hardwareMap.get(DcMotor.class, "second");
-        backRight = hardwareMap.get(DcMotor.class, "third");
+        frontLeft = hardwareMap.get(DcMotor.class, "first");
+        frontRight = hardwareMap.get(DcMotor.class, "zeroth");
+        backLeft = hardwareMap.get(DcMotor.class, "third");
+        backRight = hardwareMap.get(DcMotor.class, "second");
         armAngleMotor = hardwareMap.get(DcMotor.class, "ford");
         armMotor = hardwareMap.get(DcMotor.class, "moto_moto");
         wrist = hardwareMap.get(DcMotor.class, "wrist");
+        servo = hardwareMap.get(Servo.class, "serv0");
+        servo1 = hardwareMap.get(Servo.class, "serv1");
         // voltageSensor voltSensor = hardwareMap.voltageSensor.get("Motor Controller
         // 1");
         /*
@@ -96,148 +98,66 @@ public class AutonomouseTetrix extends LinearOpMode {
 
         armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         armMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-
-        wrist.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        wrist.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-
+        
+        wrist.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+    
+        //status is what side you are on true = blue
         boolean status = true;
-        // add arm motor hardwareMap here later
-        initDoubleVision();
+        boolean isShort = true;
+        
+        boolean debug = true;
+        
         waitForStart();
+        // Set the minimum confidence at which to keep recognitions.
+        //tfod.setMinResultConfidence((float) 0.75);
         if (opModeIsActive()) {
-
-            backward(0.5);
-
-            while (something == 0) {
-                telemetryAprilTag();
-
-                telemetry.update();
-            }
-
+            //telemetry.addline("wristPosition: ", wrist.getCurrentPosition());
             if (status) {
-                if (getMetaString.indexOf("Blue") != -1) { // change to specified areas later
+                if (isShort) { // change to specified areas later
                     backward(1.2);
                     buffer(0.3);
                     turn(true);
                     buffer(0.3);
                     backward(2.5);// might have to change later.
                     buffer(0.3);
-                    if (something == 1) {
-                        strafe(true, 0.3);
-                    } else if (something == 3) {
-                        strafe(false, 0.3);
-                    }
-                    buffer(0.4);
-                    centerRobot(); // might need to take out
-                    buffer(0.3);
-                    setArmAngle(true);
-                } else if (getMetaString.indexOf("Red") != -1) {
+                    //setArmAngle(true);
+                } else if (!isShort) {
                     backward(1.2);
                     buffer(0.3);
                     turn(false);
                     buffer(0.3);
-                    backward(2.5);// might have to change later.
+                    backward(6);// might have to change later.
                     buffer(0.3);
-                    if (something == 4) {
-                        strafe(true, 0.3);
-                    } else if (something == 6) {
-                        strafe(false, 0.3);
-                    }
-                    buffer(0.4);
-                    centerRobot();
-                    buffer(0.3);
-                    setArmAngle(true);
+                    //setArmAngle(true);
                 }
             } else {
-                if (getMetaString.indexOf("Blue") != -1) {
+                if (isShort) {
                     backward(1.2);
                     buffer(0.3);
                     turn(true);
                     buffer(0.3);
-                    backward(6);
+                    backward(2.5);
                     buffer(0.3);
-                    if (something == 1) {
-                        strafe(true, 0.3);
-                    } else if (something == 3) {
-                        strafe(false, 0.3);
-                    }
-                    buffer(0.4);
-                    centerRobot();
-                    buffer(0.3);
-                    setArmAngle(true);
-                } else if (getMetaString.indexOf("Red") != -1) {
+                    //setArmAngle(true);
+                } else if (!isShort) {
                     backward(1.2);
                     buffer(0.3);
                     turn(false);
                     buffer(0.3);
                     backward(6);
                     buffer(0.3);
-                    if (something == 1) {
-                        strafe(true, 0.3);
-                    } else if (something == 3) {
-                        strafe(false, 0.3);
-                    }
-                    buffer(0.4);
-                    centerRobot();
-                    buffer(0.3);
-                    setArmAngle(true);
+                    //setArmAngle(true);
                 }
             }
         }
     }
 
-    private void initDoubleVision() {
-        // -----------------------------------------------------------------------------------------
-        // AprilTag Configuration
-        // -----------------------------------------------------------------------------------------
-
-        aprilTag = new AprilTagProcessor.Builder()
-                .build();
-
-        // -----------------------------------------------------------------------------------------
-        // TFOD Configuration
-        // -----------------------------------------------------------------------------------------
-
-        tfod = new TfodProcessor.Builder()
-                .build();
-
-        // -----------------------------------------------------------------------------------------
-        // Camera Configuration
-        // -----------------------------------------------------------------------------------------
-
-        myVisionPortal = new VisionPortal.Builder()
-                .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"))
-                .addProcessors(tfod, aprilTag)
-                .build();
-    }
-
-    private void telemetryAprilTag() {
-        List<AprilTagDetection> currentDetections = aprilTag.getDetections();
-        telemetry.addData("# AprilTags Detected", currentDetections.size());
-
-        // Step through the list of detections and display info for each one.
-        for (AprilTagDetection detection : currentDetections) {
-            if (detection.metadata != null) {
-                telemetry.addLine(String.format("\n==== (ID %d) %s", detection.id, detection.metadata.name));
-                telemetry.addLine(String.format("XYZ %6.1f %6.1f %6.1f  (inch)", detection.ftcPose.x,
-                        detection.ftcPose.y, detection.ftcPose.z));
-                xPos = detection.ftcPose.x;
-                something = detection.id;
-                getMetaString = (String) (detection.metadata.name);
-                currentDetections.clear();
-            } else {
-                telemetry.addLine(String.format("\n==== (ID %d) Unknown", detection.id));
-                telemetry.addLine(
-                        String.format("Center %6.0f %6.0f   (pixels)", detection.center.x, detection.center.y));
-            }
-        } // end for() loop
-    } // end method telemetryAprilTag()
 
     public void move(double FR, double FL, double BL, double BR) {
-        frontLeft.setPower(-FR * 0.5);
-        frontRight.setPower(FL * 0.5);
-        backLeft.setPower(BL * 0.5);
-        backRight.setPower(-BR * 0.5);
+        frontLeft.setPower(-FL * 0.5);
+        frontRight.setPower(FR * 0.5);
+        backLeft.setPower(-BL * 0.5);
+        backRight.setPower(BR * 0.5);
     }
 
     // negative positive positive. negative
@@ -285,7 +205,8 @@ public class AutonomouseTetrix extends LinearOpMode {
         if (isLeft) {
             // telemetry.addData("moving left.");
             while (timer.seconds() <= 1.5) {
-                move(1, -1, -1, 1);
+                //frflblbr
+                move(-1, 1, 1, -1);
             }
         } else {
             /*
@@ -294,7 +215,7 @@ public class AutonomouseTetrix extends LinearOpMode {
              */
             // telemetry.addData("moving right.");
             while (timer.seconds() <= 1.5) {
-                move(-1, 1, 1, -1);
+                move(1, -1, -1, 1);
             }
         }
         move(0.0, 0.0, 0.0, 0.0);
@@ -343,31 +264,9 @@ public class AutonomouseTetrix extends LinearOpMode {
         }
     }
 
-    public void setWristPos (bool isMax) {
-        int wristStep = wristCurrentPosition - wristPreviousPosition;
-        wristCurrentPosition = wrist.getCurrentPosition();
-        
-        switch (n) {
-            case true:
-                while (wristCurrentPosition + wristStep < wristMax) {
-                    wrist.setPower(0.3);
-                }
-                break;
-            case false:
-                while (wristCurrentPosition + wristStep > wristMin) {
-                    wrist.setPower(-0.3);
-                }
-                break;
-        }
-
-        wristPreviousPosition = wristCurrentPosition;
-            
-    }
-
-
     public void setArmAngle(boolean isMax /* true = max, false = min */) {
 
-        int armStep = armAngleCurrentPosition - anglePreviousPosition;
+        int armStep = armAngleCurrentPosition - armPreviousPosition;
 
         armAngleCurrentPosition = armAngleMotor.getCurrentPosition();
 
@@ -387,7 +286,7 @@ public class AutonomouseTetrix extends LinearOpMode {
             }
             armAngleMotor.setPower(0.0);
         }
-        anglePreviousPosition = armAngleCurrentPosition;
+        armAnglePreviousPosition = armAngleCurrentPosition;
     }
 
     public void setArmPosition(boolean isMax /* true = max, false = min */) {
@@ -410,34 +309,32 @@ public class AutonomouseTetrix extends LinearOpMode {
         }
         armPreviousPosition = armCurrentPosition;
     }
-
-    // possible integration of centering a qr code
-    public void centerRobot() {
-        if (getMetaString.indexOf("Blue") != -1 || getMetaString.indexOf("Red") != -1) {
-            double targetXPos = 0.1;
-            double tolerance = 0.1;
-
-            while (aprilTag.getDetections().isEmpty()) {
-                telemetry.addData("No new QR code detected. Searching...", xPos); // this should make it so that it
-                                                                                  // checks for a new aprilTag, but
-                                                                                  // we'll see...
-                telemetry.update();
-                telemetryAprilTag();
+    
+    public void setWrist(boolean isMax) {
+        int wristStep = wristCurrentPosition - wristPreviousPosition;
+        
+        wristCurrentPosition = wrist.getCurrentPosition();
+        
+        if (isMax) {
+            while (wristCurrentPosition + wristStep < wristMaxPosition) {
+                wrist.setPower(0.3);
             }
-
-            while (Math.abs(xPos - targetXPos) > tolerance || Math.abs(xPos - targetXPos) < -tolerance) {
-                if (xPos < targetXPos) {
-                    strafe(true, 0.1);
-                    telemetry.addData("going left", xPos);
-                    telemetry.update();
-                } else if (xPos > targetXPos) {
-                    strafe(false, 0.1);
-                    telemetry.addData("going right", xPos);
-                    telemetry.update();
-                } else {
-                    break; // idk if this will work
-                }
-            move(0.0, 0.0, 0.0, 0.0);
+            wrist.setPower(0.0);
+        } else {
+            while (wristCurrentPosition + wristStep > wristMinPosition) {
+                wrist.setPower(-0.3);
+            }
+            wrist.setPower(0.0);
+        }
+        
+        wristPreviousPosition = wristCurrentPosition;
+    }
+    
+    public void setServo (boolean left, boolean right) {
+        if (left && !right) {
+            
         }
     }
+
+
 }
